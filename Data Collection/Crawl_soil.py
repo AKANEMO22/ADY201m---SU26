@@ -1,3 +1,9 @@
+import os
+import sys
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 import requests
 import pandas as pd
 import numpy as np
@@ -15,8 +21,8 @@ CONVERSION_FACTORS = {
 }
 DEPTHS = ["0-5cm", "5-15cm", "15-30cm"]
 BASE_URL = "https://rest.isric.org/soilgrids/v2.0/properties/query"
-COORDS_FILE = "bangladesh_districts_coords_data.csv"
-OUTPUT_FILE = "Bangladesh_soil_data_process.csv"
+COORDS_FILE = os.path.join(os.path.dirname(__file__), "Bangladesh_districts_coords_data.csv")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "Process_Bangladesh_soil_data_Merge.csv")
 
 def get_session():
     session = requests.Session()
@@ -100,14 +106,17 @@ def crawl_data():
         return None
 
     records = []
-    for _, row in districts.iterrows():
+    total = len(districts)
+    for i, row in districts.iterrows():
         name = row.get("District", row.get("district", "Unknown"))
+        print(f"[{i+1}/{total}] Đang tải dữ liệu đất đai cho khu vực: {name}...")
         soil_data = process_district(row["lat"], row["lon"], name)
 
         if soil_data:
             soil_data.update({"District": name})
             records.append(soil_data)
         else:
+            print(f"  -> Không tìm thấy dữ liệu cho {name}")
             empty = {k: None for k in SOIL_LAYERS.values()}
             empty.update({"District": name})
             records.append(empty)
