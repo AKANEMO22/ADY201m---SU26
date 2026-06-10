@@ -1,3 +1,9 @@
+import os
+import sys
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 import requests
 import pandas as pd
 import numpy as np
@@ -15,8 +21,8 @@ CONVERSION_FACTORS = {
 }
 DEPTHS = ["0-5cm", "5-15cm", "15-30cm"]
 BASE_URL = "https://rest.isric.org/soilgrids/v2.0/properties/query"
-COORDS_FILE = "bangladesh_districts_coords_data.csv"
-OUTPUT_FILE = "Bangladesh_soil_data_process.csv"
+COORDS_FILE = os.path.join(os.path.dirname(__file__), "Bangladesh_districts_coords_data.csv")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "Process_Bangladesh_soil_data_Merge.csv")
 
 def get_session():
     session = requests.Session()
