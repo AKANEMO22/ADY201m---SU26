@@ -106,14 +106,17 @@ def crawl_data():
         return None
 
     records = []
-    for _, row in districts.iterrows():
+    total = len(districts)
+    for i, row in districts.iterrows():
         name = row.get("District", row.get("district", "Unknown"))
+        print(f"[{i+1}/{total}] Đang tải dữ liệu đất đai cho khu vực: {name}...")
         soil_data = process_district(row["lat"], row["lon"], name)
 
         if soil_data:
             soil_data.update({"District": name})
             records.append(soil_data)
         else:
+            print(f"  -> Không tìm thấy dữ liệu cho {name}")
             empty = {k: None for k in SOIL_LAYERS.values()}
             empty.update({"District": name})
             records.append(empty)

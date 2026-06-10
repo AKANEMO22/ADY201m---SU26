@@ -1,12 +1,18 @@
+import os
+import sys
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 import requests
 import pandas as pd
 import numpy as np
 from datetime import datetime
 from time import sleep
 
-COORDS_FILE = "Bangladesh_districts_coords_data.csv"
-MAIN_DATA_FILE = 'Bangladesh_main_data.csv'
-OUTPUT_FILE = 'Bangladesh_weather_data_procces.csv'
+COORDS_FILE = os.path.join(os.path.dirname(__file__), "Bangladesh_districts_coords_data.csv")
+MAIN_DATA_FILE = os.path.join(os.path.dirname(__file__), "Bangladesh_main_data.csv")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "Process_Bangladesh_weather_data_Merge.csv")
 YEAR = 2022
 
 def get_season(month):
@@ -64,13 +70,17 @@ def crawl_data():
         return None
 
     all_data = []
-    for _, row in coords.iterrows():
+    total = len(coords)
+    for i, row in coords.iterrows():
+        name = row.get("District", row.get("district", "Unknown"))
+        print(f"[{i+1}/{total}] Đang tải dữ liệu thời tiết cho khu vực: {name}...")
         try:
             raw = fetch_nasa(row["lat"], row["lon"])
             daily = nasa_to_df(raw)
-            seasonal = aggregate_season(daily, row["district"])
+            seasonal = aggregate_season(daily, name)
             all_data.append(seasonal)
         except Exception:
+            print(f"  -> Lỗi không lấy được dữ liệu cho {name}")
             pass
         sleep(1)
 
