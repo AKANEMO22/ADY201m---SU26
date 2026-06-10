@@ -1,5 +1,9 @@
 import pandas as pd
 import os
+import sys
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -42,14 +46,22 @@ def merge_all_files():
         print(f" -> Đã ghép file thứ {i+1}. Số dòng hiện tại: {len(merged_df)} | Số cột: {len(merged_df.columns)}")
 
     # =====================================================================
-    # BƯỚC 4: XUẤT FILE MỚI
+    # BƯỚC 4: LOẠI BỎ CÁC FEATURE VÀ XUẤT FILE MỚI
     # =====================================================================
+    # Xóa các cột theo yêu cầu
+    cols_to_drop = [
+        'Avg Temp', 'Max Temp', 'Min Temp', 
+        'Max Relative Humidity', 'Min Relative Humidity', 
+        'Year', 'Harvest', 'Area', 'Production'
+    ]
+    merged_df.drop(columns=[col for col in cols_to_drop if col in merged_df.columns], inplace=True)
+    
     # Lưu file ra thư mục chứa script
     output_filename = os.path.join(SCRIPT_DIR, 'Bangladesh_database_Final_Merged.csv')
     
-    # (Tùy chọn) Có thể sắp xếp lại vị trí cột cho đẹp, đẩy 4 cột chính lên đầu
+    # (Tùy chọn) Có thể sắp xếp lại vị trí cột cho đẹp, đẩy các cột chính lên đầu
     cols = merged_df.columns.tolist()
-    primary_keys = ['Area', 'AP Ratio', 'District', 'Season']
+    primary_keys = ['AP Ratio', 'District', 'Season']
     # Loại bỏ primary keys khỏi vị trí hiện tại
     for key in primary_keys:
         if key in cols:
