@@ -1,0 +1,577 @@
+--- Cell 1 ---
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+
+--- Cell 2 ---
+# Tải dữ liệu
+df = pd.read_csv('../Data Collection/Bangladesh_database_Final_Merged.csv')
+df.head()
+
+--- Cell 4 ---
+# Lọc các cột dạng số (numeric)
+numeric_df = df.select_dtypes(include=[np.number])
+
+# Tính ma trận tương quan Pearson
+corr_matrix = numeric_df.corr()
+
+# Lấy ra mức độ tương quan của các biến với biến mục tiêu NDVI_Season_Mean
+corr_with_target = corr_matrix['NDVI_Season_Mean'].sort_values(ascending=False)
+
+print("Tương quan với NDVI_Season_Mean:")
+print(corr_with_target)
+
+--- Cell 6 ---
+plt.figure(figsize=(20, 16))
+# Vẽ heatmap cho ma trận tương quan
+sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1, center=0, linewidths=0.5)
+plt.title('Ma trận tương quan giữa các biến số (Correlation Heatmap)', fontsize=18)
+plt.tight_layout()
+plt.show()
+
+--- Cell 9 ---
+fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+
+# 1. Mối quan hệ giữa Rainfall và Rain_Temp_Ratio
+sns.scatterplot(data=df, x='Rainfall', y='Rain_Temp_Ratio', ax=axes[0], color='purple', alpha=0.6)
+axes[0].set_title('Rainfall vs Rain_Temp_Ratio (r = 0.999)')
+
+# 2. Mối quan hệ giữa Rainfall và Target
+sns.scatterplot(data=df, x='Rainfall', y='NDVI_Season_Mean', ax=axes[1], color='blue', alpha=0.6)
+axes[1].set_title('Rainfall vs NDVI_Season_Mean')
+
+# 3. Mối quan hệ giữa Rain_Temp_Ratio và Target
+sns.scatterplot(data=df, x='Rain_Temp_Ratio', y='NDVI_Season_Mean', ax=axes[2], color='green', alpha=0.6)
+axes[2].set_title('Rain_Temp_Ratio vs NDVI_Season_Mean')
+
+plt.tight_layout()
+plt.show()
+
+--- Cell 11 ---
+import statsmodels.api as sm
+
+# Chuẩn bị tập dữ liệu nhỏ gọn (Lọc bỏ NaN nếu có)
+test_df = df[['Rainfall', 'Rain_Temp_Ratio', 'NDVI_Season_Mean']].dropna()
+y_test = test_df['NDVI_Season_Mean']
+
+def run_ols(features, name):
+    X_test = test_df[features]
+    X_test = sm.add_constant(X_test) # Thêm hệ số chặn (Intercept)
+    model = sm.OLS(y_test, X_test).fit()
+    print(f"\n{'='*60}")
+    print(f"KỊCH BẢN: {name}")
+    print(f"R-squared: {model.rsquared:.5f}")
+    print(f"\nTrọng số:\n{model.params[1:]}")
+    print(f"\nP-values:\n{model.pvalues[1:]}")
+    print(f"{'='*60}")
+    return model
+
+--- Cell 12 ---
+# Kịch bản 1: Dùng cả 2 biến (Chứng minh rủi ro phá hoại mô hình)
+run_ols(['Rainfall', 'Rain_Temp_Ratio'], "DÙNG CẢ 2 BIẾN CÙNG LÚC")
+
+# Kịch bản 2: Dùng mô hình chỉ có Rainfall
+run_ols(['Rainfall'], "CHỈ DÙNG RAINFALL")
+
+# Kịch bản 3: Dùng mô hình chỉ có Rain_Temp_Ratio
+run_ols(['Rain_Temp_Ratio'], "CHỈ DÙNG RAIN_TEMP_RATIO")
+print("")
+
+--- Cell 13 ---
+if 'Rain_Temp_Ratio' in df.columns:
+    df.drop(columns=['Rain_Temp_Ratio'], inplace=True)
+    print("Đã xóa thành công cột 'Rain_Temp_Ratio'.")
+else:
+    print("Cột 'Rain_Temp_Ratio' đã được xóa từ trước.")
+print("\nSố lượng cột còn lại:", len(df.columns))
+print("\nDanh sách cột hiện tại:")
+print(df.columns.tolist())
+
+--- Cell 15 ---
+# Lọc lại dữ liệu dạng số từ df hiện tại
+numeric_df_clean = df.select_dtypes(include=[np.number])
+
+# Tính toán lại ma trận tương quan
+corr_matrix_clean = numeric_df_clean.corr()
+
+# Trực quan hóa Heatmap mới
+plt.figure(figsize=(18, 14))
+sns.heatmap(corr_matrix_clean, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1, center=0, linewidths=0.5)
+plt.title('Ma trận tương quan SAU KHI LÀM SẠCH (Đã loại bỏ Rain_Temp_Ratio)', fontsize=16)
+plt.tight_layout()
+plt.show()
+
+--- Cell 17 ---
+def ab_test_multicollinearity(feature_A, feature_B):
+    # Chuẩn bị data (Drop NaN)
+    temp = df[[feature_A, feature_B, 'NDVI_Season_Mean']].dropna()
+    y_tmp = temp['NDVI_Season_Mean']
+    
+    # Helper chạy OLS
+    def get_rsquared(features):
+        X_tmp = sm.add_constant(temp[features])
+        return sm.OLS(y_tmp, X_tmp).fit().rsquared
+    
+    r2_both = get_rsquared([feature_A, feature_B])
+    r2_A = get_rsquared([feature_A])
+    r2_B = get_rsquared([feature_B])
+    
+    print(f"Cặp {feature_A} & {feature_B}:")
+    print(f"  - Dùng CẢ HAI: R2 = {r2_both:.5f}")
+    print(f"  - Chỉ {feature_A:17}: R2 = {r2_A:.5f}")
+    print(f"  - Chỉ {feature_B:17}: R2 = {r2_B:.5f}")
+    print("-"*60)
+
+pairs = [
+    ('LST_Kelvin', 'Temp_Mean'),
+    ('Heat_Stress_Days', 'Temp_Max'),
+    ('Temp_Mean', 'Temp_Min'),
+    ('FPAR', 'LAI'),
+    ('Soil_Moisture_mm', 'Temp_Min')
+]
+
+for a, b in pairs:
+    if a in df.columns and b in df.columns:
+        ab_test_multicollinearity(a, b)
+
+--- Cell 19 ---
+# Danh sách các biến dư thừa cần loại bỏ
+final_drops = ['LST_Kelvin', 'Temp_Mean', 'Temp_Min', 'Heat_Stress_Days', 'FPAR', 'LAI']
+
+# Thực hiện Drop
+existing_drops = [col for col in final_drops if col in df.columns]
+if existing_drops:
+    df.drop(columns=existing_drops, inplace=True)
+    print(f"Đã xóa thành công các biến: {existing_drops}")
+else:
+    print("Các biến này đã được xóa từ trước.")
+
+print(f"\nSố lượng Feature sau cùng còn lại: {len(df.columns)}")
+print(df.columns.tolist())
+
+--- Cell 20 ---
+# Vẽ lại Heatmap Final để chốt kiến trúc tối ưu (Architecture Lock)
+plt.figure(figsize=(15, 12))
+sns.heatmap(df.select_dtypes(include=[np.number]).corr(), annot=True, fmt='.2f', cmap='coolwarm', linewidths=0.5)
+plt.title('Ma trận Tương quan TỐI ƯU (Final Optimized Feature Set)', fontsize=16)
+plt.tight_layout()
+plt.show()
+
+--- Cell 22 ---
+import statsmodels.api as sm
+# Tải lại dữ liệu gốc để có đủ cột cho việc chạy thử nghiệm chứng minh
+df_raw = pd.read_csv('../Data Collection/Bangladesh_database_Final_Merged.csv')
+
+def run_ols_ab_test(var1, var2):
+    test_data = df_raw[[var1, var2, 'NDVI_Season_Mean']].dropna()
+    y_t = test_data['NDVI_Season_Mean']
+    
+    # Kịch bản 1: Cả 2 biến
+    X_both = sm.add_constant(test_data[[var1, var2]])
+    model_both = sm.OLS(y_t, X_both).fit()
+    print(f"\n{'='*50}\nKỊCH BẢN 1: DÙNG CẢ {var1} VÀ {var2}")
+    print(f"R-squared: {model_both.rsquared:.5f}")
+    print(f"P-values:\n{model_both.pvalues[1:]}")
+    
+    # Kịch bản 2: Chỉ var1
+    X1 = sm.add_constant(test_data[[var1]])
+    model1 = sm.OLS(y_t, X1).fit()
+    print(f"\n{'='*50}\nKỊCH BẢN 2: CHỈ DÙNG {var1}")
+    print(f"R-squared: {model1.rsquared:.5f}")
+    print(f"P-values:\n{model1.pvalues[1:]}")
+    
+    # Kịch bản 3: Chỉ var2
+    X2 = sm.add_constant(test_data[[var2]])
+    model2 = sm.OLS(y_t, X2).fit()
+    print(f"\n{'='*50}\nKỊCH BẢN 3: CHỈ DÙNG {var2}")
+    print(f"R-squared: {model2.rsquared:.5f}")
+    print(f"P-values:\n{model2.pvalues[1:]}\n{'='*50}\n")
+
+
+--- Cell 24 ---
+fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+sns.scatterplot(data=df_raw, x='LST_Kelvin', y='Temp_Mean', ax=axes[0], color='purple', alpha=0.6)
+axes[0].set_title('LST_Kelvin vs Temp_Mean (r = 0.906)')
+
+sns.scatterplot(data=df_raw, x='LST_Kelvin', y='NDVI_Season_Mean', ax=axes[1], color='blue', alpha=0.6)
+axes[1].set_title('LST_Kelvin vs NDVI_Season_Mean')
+
+sns.scatterplot(data=df_raw, x='Temp_Mean', y='NDVI_Season_Mean', ax=axes[2], color='green', alpha=0.6)
+axes[2].set_title('Temp_Mean vs NDVI_Season_Mean')
+
+plt.tight_layout()
+plt.show()
+
+--- Cell 25 ---
+# Chạy kiểm định OLS A/B Testing để lấy bằng chứng Toán học
+run_ols_ab_test('LST_Kelvin', 'Temp_Mean')
+
+--- Cell 27 ---
+# Thực thi Drop biến Temp_Mean trên DataFrame chính (df)
+if 'Temp_Mean' in df.columns:
+    df.drop(columns=['Temp_Mean'], inplace=True)
+    print("Đã xóa thành công cột 'Temp_Mean'.")
+else:
+    print("Cột 'Temp_Mean' đã được xóa từ trước.")
+
+--- Cell 29 ---
+fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+sns.scatterplot(data=df_raw, x='Heat_Stress_Days', y='Temp_Max', ax=axes[0], color='purple', alpha=0.6)
+axes[0].set_title('Heat_Stress_Days vs Temp_Max (r = 0.891)')
+
+sns.scatterplot(data=df_raw, x='Heat_Stress_Days', y='NDVI_Season_Mean', ax=axes[1], color='blue', alpha=0.6)
+axes[1].set_title('Heat_Stress_Days vs NDVI_Season_Mean')
+
+sns.scatterplot(data=df_raw, x='Temp_Max', y='NDVI_Season_Mean', ax=axes[2], color='green', alpha=0.6)
+axes[2].set_title('Temp_Max vs NDVI_Season_Mean')
+
+plt.tight_layout()
+plt.show()
+
+--- Cell 30 ---
+# Chạy kiểm định OLS A/B Testing để lấy bằng chứng Toán học
+run_ols_ab_test('Heat_Stress_Days', 'Temp_Max')
+
+--- Cell 32 ---
+# Thực thi Drop biến Heat_Stress_Days trên DataFrame chính (df)
+if 'Heat_Stress_Days' in df.columns:
+    df.drop(columns=['Heat_Stress_Days'], inplace=True)
+    print("Đã xóa thành công cột 'Heat_Stress_Days'.")
+else:
+    print("Cột 'Heat_Stress_Days' đã được xóa từ trước.")
+
+--- Cell 34 ---
+fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+sns.scatterplot(data=df_raw, x='Temp_Mean', y='Temp_Min', ax=axes[0], color='purple', alpha=0.6)
+axes[0].set_title('Temp_Mean vs Temp_Min (r = 0.874)')
+
+sns.scatterplot(data=df_raw, x='Temp_Mean', y='NDVI_Season_Mean', ax=axes[1], color='blue', alpha=0.6)
+axes[1].set_title('Temp_Mean vs NDVI_Season_Mean')
+
+sns.scatterplot(data=df_raw, x='Temp_Min', y='NDVI_Season_Mean', ax=axes[2], color='green', alpha=0.6)
+axes[2].set_title('Temp_Min vs NDVI_Season_Mean')
+
+plt.tight_layout()
+plt.show()
+
+--- Cell 35 ---
+# Chạy kiểm định OLS A/B Testing để lấy bằng chứng Toán học
+run_ols_ab_test('Temp_Mean', 'Temp_Min')
+
+--- Cell 37 ---
+# Thực thi Drop biến Temp_Min trên DataFrame chính (df)
+if 'Temp_Min' in df.columns:
+    df.drop(columns=['Temp_Min'], inplace=True)
+    print("Đã xóa thành công cột 'Temp_Min'.")
+else:
+    print("Cột 'Temp_Min' đã được xóa từ trước.")
+
+--- Cell 39 ---
+fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+sns.scatterplot(data=df_raw, x='FPAR', y='LAI', ax=axes[0], color='purple', alpha=0.6)
+axes[0].set_title('FPAR vs LAI (r = 0.849)')
+
+sns.scatterplot(data=df_raw, x='FPAR', y='NDVI_Season_Mean', ax=axes[1], color='blue', alpha=0.6)
+axes[1].set_title('FPAR vs NDVI_Season_Mean')
+
+sns.scatterplot(data=df_raw, x='LAI', y='NDVI_Season_Mean', ax=axes[2], color='green', alpha=0.6)
+axes[2].set_title('LAI vs NDVI_Season_Mean')
+
+plt.tight_layout()
+plt.show()
+
+--- Cell 40 ---
+# Chạy kiểm định OLS A/B Testing để lấy bằng chứng Toán học
+run_ols_ab_test('FPAR', 'LAI')
+
+--- Cell 42 ---
+# Thực thi Drop biến LAI trên DataFrame chính (df)
+if 'LAI' in df.columns:
+    df.drop(columns=['LAI'], inplace=True)
+    print("Đã xóa thành công cột 'LAI'.")
+else:
+    print("Cột 'LAI' đã được xóa từ trước.")
+
+--- Cell 44 ---
+fig, axes = plt.subplots(1, 3, figsize=(20, 6))
+sns.scatterplot(data=df_raw, x='Soil_Moisture_mm', y='Temp_Min', ax=axes[0], color='purple', alpha=0.6)
+axes[0].set_title('Soil_Moisture_mm vs Temp_Min (r = 0.847)')
+
+sns.scatterplot(data=df_raw, x='Soil_Moisture_mm', y='NDVI_Season_Mean', ax=axes[1], color='blue', alpha=0.6)
+axes[1].set_title('Soil_Moisture_mm vs NDVI_Season_Mean')
+
+sns.scatterplot(data=df_raw, x='Temp_Min', y='NDVI_Season_Mean', ax=axes[2], color='green', alpha=0.6)
+axes[2].set_title('Temp_Min vs NDVI_Season_Mean')
+
+plt.tight_layout()
+plt.show()
+
+--- Cell 45 ---
+# Chạy kiểm định OLS A/B Testing để lấy bằng chứng Toán học
+run_ols_ab_test('Soil_Moisture_mm', 'Temp_Min')
+
+--- Cell 47 ---
+# Thực thi Drop biến Temp_Min trên DataFrame chính (df)
+if 'Temp_Min' in df.columns:
+    df.drop(columns=['Temp_Min'], inplace=True)
+    print("Đã xóa thành công cột 'Temp_Min'.")
+else:
+    print("Cột 'Temp_Min' đã được xóa từ trước.")
+
+--- Cell 49 ---
+numeric_df_final = df.select_dtypes(include=[np.number])
+corr_matrix_final = numeric_df_final.corr()
+
+plt.figure(figsize=(16, 12))
+sns.heatmap(corr_matrix_final, annot=True, fmt='.2f', cmap='coolwarm', vmin=-1, vmax=1, center=0, linewidths=0.5)
+plt.title('Ma trận tương quan FINAL (Đã dọn dẹp hoàn toàn Đa cộng tuyến)', fontsize=16)
+plt.tight_layout()
+plt.show()
+
+print("Danh sách cột hiện tại của Dataset sẵn sàng cho Học máy:")
+print(df.columns.tolist())
+
+--- Cell 50 ---
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Đọc dữ liệu
+df = pd.read_csv('Agri_Data_Cleaned.csv')
+
+# Vẽ biểu đồ boxplot cho cột 'AP_Ratio'
+plt.figure(figsize=(10, 6))
+sns.boxplot(y=df['AP_Ratio'])
+plt.title('Boxplot of AP_Ratio')
+plt.ylabel('AP_Ratio')
+plt.show()
+print(df['AP_Ratio'].max())
+
+--- Cell 51 ---
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Đọc dữ liệu
+df = pd.read_csv('Agri_Data_Cleaned.csv')
+
+# 1. Tính Q1, Q3 và IQR cho cột AP_Ratio
+Q1 = df['AP_Ratio'].quantile(0.25)
+Q3 = df['AP_Ratio'].quantile(0.75)
+IQR = Q3 - Q1
+
+# 2. Xác định biên dưới và biên trên (tương ứng với râu của biểu đồ boxplot)
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# 3. Sử dụng .clip() để đưa các giá trị vượt ra ngoài biên về giá trị biên
+df['AP_Ratio'] = df['AP_Ratio'].clip(lower=lower_bound, upper=upper_bound)
+
+# 4. Vẽ lại biểu đồ boxplot sau khi đã xử lý
+plt.figure(figsize=(10, 6))
+sns.boxplot(y=df['AP_Ratio'])
+plt.title('Boxplot of AP_Ratio (Outliers Capped)')
+plt.ylabel('AP_Ratio')
+plt.show()
+
+--- Cell 52 ---
+df.head()
+
+--- Cell 54 ---
+from sklearn.preprocessing import StandardScaler
+
+# 1. Xác định các cột dạng số cần chuẩn hóa (Loại bỏ Target và các cột Categorical dạng chuỗi)
+numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+target_col = 'NDVI_Season_Mean'
+if target_col in numeric_cols:
+    numeric_cols.remove(target_col)
+
+# Tiền xử lý nhanh: Dọn dẹp Inf (Vô cực) và NaN (Khuyết) để StandardScaler không báo lỗi
+# (Lưu ý: Inf thường sinh ra ở cột AP Ratio do chia cho Area = 0)
+df[numeric_cols] = df[numeric_cols].replace([np.inf, -np.inf], np.nan)
+for col in numeric_cols:
+    df[col].fillna(df[col].median(), inplace=True)
+
+# 2. Khởi tạo và áp dụng StandardScaler
+scaler = StandardScaler()
+df_scaled = df.copy() # Tạo một bản copy để đối chiếu
+
+# Thực hiện Fit (tính Mean, Std) và Transform (Scale) cùng lúc
+df_scaled[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+
+# 3. Kiểm chứng kết quả thống kê
+print("Thống kê mô tả SAU KHI chuẩn hóa (StandardScaler):")
+print("--> Mọi cột đều phải có Mean ~ 0.0 và Std ~ 1.0\n")
+display(df_scaled[numeric_cols].describe().round(3).loc[['mean', 'std', 'min', 'max']])
+
+--- Cell 55 ---
+df_scaled.head()
+
+--- Cell 56 ---
+# Áp dụng One-Hot Encoding cho cột 'Season' với drop_first=True
+if 'Season' in df_scaled.columns:
+    df_scaled = pd.get_dummies(df_scaled, columns=['Season'], drop_first=True)
+    print("Đã áp dụng One-Hot Encoding cho cột 'Season' thành công!")
+else:
+    print("Cột 'Season' không tồn tại hoặc đã được xử lý.")
+
+df_scaled.head()
+
+--- Cell 57 ---
+# Tạo dictionary chuẩn hóa tên các tháng (viết tắt & viết đầy đủ) sang số từ 1-12
+month_map = {
+    'Jan': 1, 'January': 1,
+    'Feb': 2, 'February': 2,
+    'March': 3,
+    'April': 4,
+    'May': 5,
+    'June': 6,
+    'July': 7,
+    'Aug': 8, 'August': 8,
+    'Sep': 9, 'September': 9,
+    'Oct': 10, 'October': 10,
+    'Nov': 11, 'November': 11,
+    'Dec': 12, 'December': 12
+}
+
+if 'Transplant' in df_scaled.columns:
+    # Áp dụng map để chuyển đổi sang dạng số
+    df_scaled['Transplant'] = df_scaled['Transplant'].map(month_map)
+    
+    # Xử lý các giá trị NaN nếu có (trường hợp có giá trị lạ không nằm trong dictionary)
+    # Chuyển kiểu dữ liệu sang int (sau khi đã điền missing values nếu cần)
+    df_scaled['Transplant'] = df_scaled['Transplant'].fillna(-1).astype(int)
+    
+    print("Đã chuyển đổi thành công cột 'Transplant' sang dạng số (1-12)!")
+    display(df_scaled['Transplant'].value_counts())
+else:
+    print("Cột 'Transplant' không tồn tại.")
+
+
+--- Cell 58 ---
+# Thực hiện Target Encoding cho biến 'District' và 'Crop Name'
+# Tính giá trị trung bình của biến mục tiêu (NDVI_Season_Mean) cho từng category
+
+target_col = 'NDVI_Season_Mean'
+cat_cols = ['District', 'Crop_Name']
+
+for col in cat_cols:
+    if col in df_scaled.columns:
+        # Tính mean target theo từng nhóm
+        target_mean = df_scaled.groupby(col)[target_col].mean()
+        
+        # Cập nhật trực tiếp vào df_scaled (hoặc tạo cột mới nếu muốn giữ cột cũ)
+        df_scaled[col] = df_scaled[col].map(target_mean).astype('float64')
+        
+        print(f"Đã thực hiện Target Encoding cho cột: {col}")
+    else:
+        print(f"Cột {col} không tồn tại.")
+
+df_scaled.head()
+
+
+--- Cell 59 ---
+# Tách Feature 'Growth' thành 4 features mới
+
+month_map_growth = {
+    'jan': 1, 'january': 1,
+    'feb': 2, 'february': 2,
+    'march': 3,
+    'april': 4,
+    'may': 5,
+    'june': 6,
+    'july': 7,
+    'aug': 8, 'august': 8,
+    'sep': 9, 'september': 9,
+    'oct': 10, 'october': 10,
+    'nov': 11, 'november': 11,
+    'dec': 12, 'december': 12
+}
+
+def parse_growth(val):
+    if not isinstance(val, str) or 'no need to do' in val.lower():
+        return pd.Series({
+            'start_month': 0, 
+            'end_month': 0, 
+            'duration_months': 0, 
+            'no_growth_flag': 1
+        })
+    
+    # Xóa bớt khoảng trắng thừa và tách theo chữ ' to '
+    # Dùng regex hoặc thay thế khoảng trắng kép thành khoảng trắng đơn trước
+    val_clean = ' '.join(val.lower().split())
+    parts = val_clean.split(' to ')
+    
+    if len(parts) == 2:
+        start_str = parts[0].strip()
+        end_str = parts[1].strip()
+        
+        start_m = month_map_growth.get(start_str, 0)
+        end_m = month_map_growth.get(end_str, 0)
+        
+        if start_m != 0 and end_m != 0:
+            # Tính duration (có tính modulo 12 cho việc qua năm)
+            if end_m >= start_m:
+                duration = end_m - start_m + 1
+            else:
+                duration = (12 - start_m + 1) + end_m
+                
+            return pd.Series({
+                'start_month': start_m,
+                'end_month': end_m,
+                'duration_months': duration,
+                'no_growth_flag': 0
+            })
+            
+    # Fallback cho trường hợp format không nhận diện được
+    return pd.Series({
+        'start_month': 0, 
+        'end_month': 0, 
+        'duration_months': 0, 
+        'no_growth_flag': 0
+    })
+
+if 'Growth' in df_scaled.columns:
+    # Áp dụng hàm apply để tạo 4 cột mới
+    growth_features = df_scaled['Growth'].apply(parse_growth)
+    
+    # Ghép 4 cột này vào df_scaled
+    df_scaled = pd.concat([df_scaled, growth_features], axis=1)
+    
+    # Xóa cột Growth gốc đi vì đã tách xong
+    df_scaled.drop(columns=['Growth'], inplace=True)
+    
+    print("Đã tách cột 'Growth' thành 4 features mới thành công!")
+else:
+    print("Cột 'Growth' không tồn tại hoặc đã được xử lý.")
+
+df_scaled.head(10)
+
+
+--- Cell 60 ---
+# Áp dụng One-Hot Encoding cho cột 'Dominant_Soil_Texture' với drop_first=True
+if 'Dominant_Soil_Texture' in df_scaled.columns:
+    df_scaled = pd.get_dummies(df_scaled, columns=['Dominant_Soil_Texture'], drop_first=True)
+    print("Đã áp dụng One-Hot Encoding cho cột 'Dominant_Soil_Texture' thành công!")
+else:
+    print("Cột 'Dominant_Soil_Texture' không tồn tại hoặc đã được xử lý.")
+
+df_scaled.head()
+
+
+--- Cell 61 ---
+# Bỏ các chỉ số vệ tinh FPAR và EVI có tính tương quan quá cao với NDVI_Season_Mean\n
+drop_cols = ['FPAR', 'EVI']
+existing_drops = [col for col in drop_cols if col in df_scaled.columns]
+if existing_drops:
+    df_scaled = df_scaled.drop(columns=existing_drops)
+    print(f'Đã xóa các cột: {existing_drops}')
+else:
+    print('Các cột đã được xóa từ trước.')
+
+--- Cell 62 ---
+df_scaled.to_csv('Agri_Data_Preprocessed.csv', index=False)
+
