@@ -3,6 +3,10 @@ from sqlalchemy import create_engine
 
 df = pd.read_csv("Agri_Data_Cleaned.csv", encoding="utf-8-sig")
 
+print("Số dòng, số cột:", df.shape)
+print("Danh sách cột:")
+print(df.columns.tolist())
+
 engine = create_engine(
     "mssql+pyodbc://@localhost/testdb"
     "?driver=ODBC+Driver+17+for+SQL+Server"
@@ -10,6 +14,12 @@ engine = create_engine(
     "&TrustServerCertificate=yes"
 )
 
-df.to_sql("Data", engine, if_exists="replace", index=False)
+df.to_sql(
+    "Data",
+    engine,
+    if_exists="replace",
+    index=False,
+    schema="dbo"
+)
 
-print("xong")
+print("xong: đã import bảng dbo.Data")
