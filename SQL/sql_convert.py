@@ -1,7 +1,7 @@
 import pandas as pd
 from sqlalchemy import create_engine
 
-df = pd.read_csv("SQL/Agri_Data_Cleaned.csv", encoding="utf-8-sig")
+df = pd.read_csv("Agri_Data_Cleaned.csv", encoding="utf-8-sig")
 
 engine = create_engine(
     "mssql+pyodbc://@localhost/testdb"
