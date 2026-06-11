@@ -1,3 +1,4 @@
+-- NDVI trung bình theo cây trồng
 SELECT 
     Crop_Name,
     AVG(NDVI_Season_Mean) AS Avg_NDVI,
@@ -5,7 +6,7 @@ SELECT
 FROM [Data]
 GROUP BY Crop_Name
 ORDER BY Avg_NDVI DESC;
-
+-- So sánh sức khỏe cây trồng giữa các mùa
 SELECT 
     Season,
     AVG(NDVI_Season_Mean) AS Avg_NDVI,
@@ -14,7 +15,7 @@ SELECT
 FROM [Data]
 GROUP BY Season
 ORDER BY Avg_NDVI DESC;
-
+-- So sánh sức khỏe cây trồng giữa các mùa
 SELECT 
     District,
     Crop_Name,
@@ -25,7 +26,7 @@ FROM [Data]
 WHERE NDVI_Season_Mean < 0.45
   AND Avg_Salinity_Index > 500
 ORDER BY Avg_Salinity_Index DESC;
-
+--Thống kê NDVI theo cây trồng và mùa vụ 
 SELECT 
     Crop_Name,
     Season,
@@ -35,7 +36,7 @@ SELECT
 FROM [Data]
 GROUP BY Crop_Name, Season
 ORDER BY Crop_Name, Avg_NDVI DESC;
-
+-- Xếp hạng cây trồng theo NDVI trong từng mùa
 SELECT 
     Crop_Name,
     Season,
@@ -47,40 +48,3 @@ SELECT
 FROM [Data]
 GROUP BY Crop_Name, Season
 ORDER BY Season, NDVI_Rank;
-
-SELECT 
-    Crop_Name,
-    AVG(NDVI_Season_Mean) AS Avg_NDVI
-FROM [Data]
-GROUP BY Crop_Name
-HAVING AVG(NDVI_Season_Mean) > (
-    SELECT AVG(NDVI_Season_Mean)
-    FROM [Data]
-)
-ORDER BY Avg_NDVI DESC;
-
-WITH CropSeason AS (
-    SELECT 
-        Crop_Name,
-        Season,
-        AVG(NDVI_Season_Mean) AS Crop_Season_NDVI
-    FROM [Data]
-    GROUP BY Crop_Name, Season
-),
-SeasonAvg AS (
-    SELECT 
-        Season,
-        AVG(NDVI_Season_Mean) AS Season_Avg_NDVI
-    FROM [Data]
-    GROUP BY Season
-)
-SELECT 
-    cs.Crop_Name,
-    cs.Season,
-    cs.Crop_Season_NDVI,
-    sa.Season_Avg_NDVI,
-    cs.Crop_Season_NDVI - sa.Season_Avg_NDVI AS Difference
-FROM CropSeason cs
-JOIN SeasonAvg sa
-    ON cs.Season = sa.Season
-ORDER BY cs.Season, Difference DESC;
