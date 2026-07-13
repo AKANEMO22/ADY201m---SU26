@@ -1,50 +1,68 @@
--- NDVI trung bình theo cây trồng
+-- 1. NDVI trung bình theo cây trồng
 SELECT 
-    Crop_Name,
-    AVG(NDVI_Season_Mean) AS Avg_NDVI,
+    [Crop Name] AS Crop_Name,
+    ROUND(AVG([NDVI_Season_Mean]), 3) AS Avg_NDVI,
     COUNT(*) AS Total_Records
 FROM [Data]
-GROUP BY Crop_Name
+GROUP BY [Crop Name]
 ORDER BY Avg_NDVI DESC;
--- So sánh sức khỏe cây trồng giữa các mùa
+
+
+-- 2. So sánh sức khỏe cây trồng giữa các mùa
 SELECT 
-    Season,
-    AVG(NDVI_Season_Mean) AS Avg_NDVI,
-    AVG(Rainfall) AS Avg_Rainfall,
-    AVG(Temp_Mean) AS Avg_Temperature
+    [Season],
+    ROUND(AVG([NDVI_Season_Mean]), 3) AS Avg_NDVI,
+    ROUND(AVG([Rainfall]), 2) AS Avg_Rainfall,
+    ROUND(AVG([Avg Temp]), 2) AS Avg_Temperature
 FROM [Data]
-GROUP BY Season
+GROUP BY [Season]
 ORDER BY Avg_NDVI DESC;
--- So sánh sức khỏe cây trồng giữa các mùa
+
+
+-- 3. Tìm khu vực có NDVI thấp và độ mặn cao
 SELECT 
-    District,
-    Crop_Name,
-    Season,
-    NDVI_Season_Mean,
-    Avg_Salinity_Index
+    [District],
+    [Crop Name] AS Crop_Name,
+    [Season],
+    ROUND([NDVI_Season_Mean], 3) AS NDVI_Season_Mean,
+    ROUND([Avg_Salinity_Index], 2) AS Avg_Salinity_Index
 FROM [Data]
-WHERE NDVI_Season_Mean < 0.45
-  AND Avg_Salinity_Index > 500
-ORDER BY Avg_Salinity_Index DESC;
---Thống kê NDVI theo cây trồng và mùa vụ 
+WHERE [NDVI_Season_Mean] < 0.45
+  AND [Avg_Salinity_Index] > 500
+ORDER BY [Avg_Salinity_Index] DESC;
+
+
+-- 4. Thống kê NDVI theo cây trồng và mùa vụ
 SELECT 
-    Crop_Name,
-    Season,
-    AVG(NDVI_Season_Mean) AS Avg_NDVI,
-    AVG(Rainfall) AS Avg_Rainfall,
-    AVG(Soil_Moisture_mm) AS Avg_Soil_Moisture
+    [Crop Name] AS Crop_Name,
+    [Season],
+    ROUND(AVG([NDVI_Season_Mean]), 3) AS Avg_NDVI,
+    ROUND(AVG([Rainfall]), 2) AS Avg_Rainfall,
+    ROUND(AVG([Soil_Moisture_mm]), 2) AS Avg_Soil_Moisture
 FROM [Data]
-GROUP BY Crop_Name, Season
-ORDER BY Crop_Name, Avg_NDVI DESC;
--- Xếp hạng cây trồng theo NDVI trong từng mùa
+GROUP BY 
+    [Crop Name],
+    [Season]
+ORDER BY 
+    [Crop Name],
+    Avg_NDVI DESC;
+
+
+-- 5. Xếp hạng cây trồng theo NDVI trong từng mùa
 SELECT 
-    Crop_Name,
-    Season,
-    AVG(NDVI_Season_Mean) AS Avg_NDVI,
+    [Crop Name] AS Crop_Name,
+    [Season],
+    ROUND(AVG([NDVI_Season_Mean]), 3) AS Avg_NDVI,
+
     RANK() OVER (
-        PARTITION BY Season 
-        ORDER BY AVG(NDVI_Season_Mean) DESC
+        PARTITION BY [Season]
+        ORDER BY AVG([NDVI_Season_Mean]) DESC
     ) AS NDVI_Rank
+
 FROM [Data]
-GROUP BY Crop_Name, Season
-ORDER BY Season, NDVI_Rank;
+GROUP BY 
+    [Crop Name],
+    [Season]
+ORDER BY 
+    [Season],
+    NDVI_Rank;
