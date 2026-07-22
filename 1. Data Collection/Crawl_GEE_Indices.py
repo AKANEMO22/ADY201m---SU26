@@ -188,7 +188,7 @@ def fe_ndvi(df):
         
     df['Season'] = df['Month'].apply(get_season)
     stats = df.groupby(['District', 'Season'])['NDVI'].agg(['mean']).reset_index()
-    stats.columns = ['District', 'Season', 'NDVI_Season_Mean']
+    stats.columns = ['District', 'Season', 'NDVI']
     return stats
 
 

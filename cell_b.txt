@@ -8,7 +8,7 @@
     "from sklearn.decomposition import PCA\n",
     "\n",
     "# Chuẩn bị dữ liệu cho PCA: dùng các biến số hiện tại (đã loại bỏ Đa cộng tuyến), loại trừ biến mục tiêu\n",
-    "target_col = 'NDVI_Season_Mean'\n",
+    "target_col = 'NDVI'\n",
     "pca_features = [col for col in numeric_df_final.columns if col != target_col]\n",
     "\n",
     "X_pca_raw = numeric_df_final[pca_features].replace([np.inf, -np.inf], np.nan)\n",
