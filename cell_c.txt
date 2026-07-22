@@ -1,0 +1,27 @@
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, axes = plt.subplots(1, 2, figsize=(16, 6))\n",
+    "\n",
+    "# Scree plot - phương sai giải thích của từng thành phần\n",
+    "axes[0].bar(range(1, len(explained) + 1), explained, alpha=0.7, color='steelblue')\n",
+    "axes[0].plot(range(1, len(explained) + 1), explained, marker='o', color='red')\n",
+    "axes[0].set_xlabel('Thành phần chính (Principal Component)')\n",
+    "axes[0].set_ylabel('Tỷ lệ phương sai giải thích')\n",
+    "axes[0].set_title('Scree Plot')\n",
+    "\n",
+    "# Cumulative explained variance\n",
+    "axes[1].plot(range(1, len(cumulative) + 1), cumulative, marker='o', color='green')\n",
+    "axes[1].axhline(y=0.95, color='red', linestyle='--', label='Ngưỡng 95% phương sai')\n",
+    "axes[1].set_xlabel('Số lượng thành phần chính')\n",
+    "axes[1].set_ylabel('Phương sai tích lũy')\n",
+    "axes[1].set_title('Cumulative Explained Variance')\n",
+    "axes[1].legend()\n",
+    "\n",
+    "plt.tight_layout()\n",
+    "plt.show()"
+   ]
+  },

@@ -1,0 +1,27 @@
+   {
+    "cell_type": "code",
+    "execution_count": 6,
+    "metadata": {},
+    "outputs": [
+     {
+      "name": "stdout",
+      "output_type": "stream",
+      "text": [
+        "Đã xóa thành công các cột: ['Rain_Temp_Ratio', 'Temp_Mean', 'Temp_Min', 'Heat_Stress_Days', 'LAI', 'FPAR', 'EVI', 'Organic_Carbon', 'Soil_Moisture_mm']\n",
+     "\n",
+      "Kích thước dữ liệu hiện tại: (10000, 20)\n"
+     ]
+     }
+    ],
+    "source": [
+     "# Danh sách các biến dư thừa cần loại bỏ do Đa cộng tuyến\n",
+     "drop_cols = ['Rain_Temp_Ratio', 'Temp_Mean', 'Temp_Min', 'Heat_Stress_Days', 'LAI','FPAR','EVI','Organic_Carbon','Soil_Moisture_mm']\n",
+     "existing_drops = [col for col in drop_cols if col in df.columns]\n",
+     "\n",
+     "if existing_drops:\n",
+     "    df.drop(columns=existing_drops, inplace=True)\n",
+     "    print(f\"Đã xóa thành công các cột: {existing_drops}\")\n",
+     "#\n",
+     "print(\"\\nKích thước dữ liệu hiện tại:\", df.shape)"
+    ]
+   },

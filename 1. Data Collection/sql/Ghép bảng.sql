@@ -18,7 +18,7 @@ SELECT
     g.[Crop Name],
     g.Transplant,
     g.Growth,
-    g.NDVI_Season_Mean,
+    g.NDVI,
     g.EVI,
     g.LAI,
     g.FPAR,

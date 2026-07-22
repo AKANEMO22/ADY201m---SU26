@@ -1,0 +1,10 @@
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Giảm chiều dữ liệu bằng PCA (Principal Component Analysis)\n",
+    "PCA là kỹ thuật giảm chiều tuyến tính giúp biến đổi các biến gốc (có thể tương quan) thành một tập hợp các thành phần chính (Principal Components) không tương quan, đồng thời giữ lại tối đa phương sai (variance) của dữ liệu. Đây là một cách tiếp cận khác để xử lý Đa cộng tuyến bên cạnh việc loại bỏ biến thủ công.\n",
+    "\n",
+    "**Lưu ý:** PCA yêu cầu dữ liệu phải được chuẩn hóa (standardized) trước khi áp dụng để đảm bảo các biến có cùng thang đo."
+   ]
+  },
