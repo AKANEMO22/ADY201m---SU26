@@ -16,7 +16,6 @@ $mergeSql = Join-Path $sqlDir "06_SQL_Server_Final_Merge.sql"
 $soilCsv = Join-Path $dataDir "Process_Bangladesh_soil_data_Merge.csv"
 $weatherCsv = Join-Path $dataDir "Process_Bangladesh_weather_data_Merge.csv"
 $geeCsv = Join-Path $dataDir "Process_Bangladesh_GEE_Indices_Merge.csv"
-$sampleCsv = Join-Path $sqlDir "sample_map_seed42.csv"
 
 # Xuat file moi de so sanh, khong ghi de file Final cu.
 $outputCsv = Join-Path $dataDir "Bangladesh_database_Final_Merged_SQLServer.csv"
@@ -73,7 +72,6 @@ Check-File $mergeSql
 Check-File $soilCsv
 Check-File $weatherCsv
 Check-File $geeCsv
-Check-File $sampleCsv
 
 Write-Host "1. Tao database va cac bang staging..."
 Run-SqlFile $setupSql
@@ -82,7 +80,6 @@ Write-Host "`n2. Nap CSV vao SQL Server..."
 Import-CsvToTable $soilCsv "SoilData"
 Import-CsvToTable $weatherCsv "WeatherData"
 Import-CsvToTable $geeCsv "GeeRawImport"
-Import-CsvToTable $sampleCsv "SampleMap"
 
 Write-Host "`n3. Chay LEFT JOIN bang T-SQL..."
 Run-SqlFile $mergeSql
